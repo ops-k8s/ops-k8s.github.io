@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>构建企业级镜像仓库-Harbor_v1.10.1 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="1、 Harbor Installation Prerequisites 主机名设置：~]# hostnamectl  set-hostname harbor.linux.io  关闭防火墙：~]# for i in stop disable ;do sudo systemctl $i firewalld; done  关闭selinux：~]# setenforce 0 &amp;&amp; s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="构建企业级镜像仓库-Harbor_v1.10.1">
+<meta property="og:url" content="http://yoursite.com/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1、 Harbor Installation Prerequisites 主机名设置：~]# hostnamectl  set-hostname harbor.linux.io  关闭防火墙：~]# for i in stop disable ;do sudo systemctl $i firewalld; done  关闭selinux：~]# setenforce 0 &amp;&amp; s">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-03-26T09:05:33.000Z">
+<meta property="article:modified_time" content="2020-03-26T17:15:22.446Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="harbor">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-构建企业级镜像仓库-Harbor" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/" class="article-date">
+  <time datetime="2020-03-26T09:05:33.000Z" itemprop="datePublished">2020-03-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      构建企业级镜像仓库-Harbor_v1.10.1
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="1、-Harbor-Installation-Prerequisites"><a href="#1、-Harbor-Installation-Prerequisites" class="headerlink" title="1、 Harbor Installation Prerequisites"></a>1、 Harbor Installation Prerequisites</h2><ul>
+<li><p>主机名设置：<code>~]# hostnamectl  set-hostname harbor.linux.io</code></p>
+</li>
+<li><p>关闭防火墙：<code>~]# for i in stop disable ;do sudo systemctl $i firewalld; done</code></p>
+</li>
+<li><p>关闭selinux：<code>~]# setenforce 0 &amp;&amp; sudo sed -i &quot;s/^SELINUX=enforcing/SELINUX=disabled/g&quot; /etc/selinux/config</code></p>
+</li>
+<li><p>时间同步：<code>*/3 * * * * /usr/sbin/ntpdate ntp.aliyun.com &gt; /dev/null</code></p>
+</li>
+<li><p>开启内核转发</p>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">~]# cat &gt; &#x2F;etc&#x2F;sysctl.d&#x2F;99-kubernetes-cri.conf &lt;&lt;EOF</span><br><span class="line">net.bridge.bridge-nf-call-iptables  &#x3D; 1</span><br><span class="line">net.ipv4.ip_forward                 &#x3D; 1</span><br><span class="line">net.bridge.bridge-nf-call-ip6tables &#x3D; 1</span><br><span class="line">EOF</span><br><span class="line">~]# sysctl  --system</span><br></pre></td></tr></table></figure>
+
+<h2 id="2、Install-docker"><a href="#2、Install-docker" class="headerlink" title="2、Install docker"></a>2、Install docker</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">~]# yum install -y yum-utils device-mapper-persistent-data lvm2</span><br><span class="line">~]# yum-config-manager --add-repo http:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;docker-ce&#x2F;linux&#x2F;centos&#x2F;docker-ce.repo</span><br><span class="line">~]# yum install -y  docker-ce-19.03.8</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">~]# mkdir &#x2F;etc&#x2F;docker</span><br><span class="line">~]# mkdir -pv &#x2F;opt&#x2F;docker-root</span><br><span class="line">~]# vim &#x2F;etc&#x2F;docker&#x2F;daemon.json</span><br><span class="line">&#123;</span><br><span class="line">        &quot;registry-mirrors&quot;: [&quot;https:&#x2F;&#x2F;o4uba187.mirror.aliyuncs.com&quot;],</span><br><span class="line">        &quot;graph&quot;:  &quot;&#x2F;opt&#x2F;docker-root&quot;</span><br><span class="line">&#125;</span><br><span class="line"> ~]# for i in enable restart; do systemctl restart docker ;done</span><br></pre></td></tr></table></figure>
+
+<h2 id="Download-the-Harbor-Installer"><a href="#Download-the-Harbor-Installer" class="headerlink" title="Download the Harbor Installer"></a>Download the Harbor Installer</h2><ul>
+<li><a href="https://github.com/goharbor/harbor/releases" target="_blank" rel="noopener">Download and Unpack the Installer</a></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# wget https:&#x2F;&#x2F;github.com&#x2F;goharbor&#x2F;harbor&#x2F;releases&#x2F;download&#x2F;v1.10.1&#x2F;harbor-online-installer-v1.10.1.tgz</span><br><span class="line">~]# tar -xf harbor-online-installer-v1.10.1.tgz  -C &#x2F;opt&#x2F;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Install docker-compose</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# yum install -y python3-pip</span><br><span class="line">~]# pip3 install docker-compose -i https:&#x2F;&#x2F;pypi.douban.com&#x2F;simple</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><a href="https://goharbor.io/docs/1.10/install-config/configure-https/" target="_blank" rel="noopener">Configure HTTPS Access to Harbor</a></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# mkdir &#x2F;opt&#x2F;harbor&#x2F;ssl</span><br><span class="line">~]# cd &#x2F;opt&#x2F;harbor&#x2F;ssl</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. Generate a CA certificate private key.</span><br><span class="line">ssl]# openssl genrsa -out ca.key 4096</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">2. Generate the CA certificate.</span><br><span class="line">ssl]# openssl req -x509 -new -nodes -sha512 -days 3650 \</span><br><span class="line"> -subj &quot;&#x2F;C&#x3D;CN&#x2F;ST&#x3D;Beijing&#x2F;L&#x3D;Beijing&#x2F;O&#x3D;example&#x2F;OU&#x3D;Personal&#x2F;CN&#x3D;harbor.linux.io&quot; \</span><br><span class="line"> -key ca.key \</span><br><span class="line"> -out ca.crt</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">3. Generate a private key for harbor server.</span><br><span class="line">ssl]# openssl genrsa -out harbor.linux.io.key 4096</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">4. Generate a certificate signing request (CSR).</span><br><span class="line">ssl]# openssl req -sha512 -new \</span><br><span class="line">    -subj &quot;&#x2F;C&#x3D;CN&#x2F;ST&#x3D;Beijing&#x2F;L&#x3D;Beijing&#x2F;O&#x3D;example&#x2F;OU&#x3D;Personal&#x2F;CN&#x3D;harbor.linux.io&quot; \</span><br><span class="line">    -key harbor.linux.io.key \</span><br><span class="line">    -out harbor.linux.io.csr</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">5. Generate an x509 v3 extension file.</span><br><span class="line">ssl]# cat &gt; v3.ext &lt;&lt;-EOF</span><br><span class="line">authorityKeyIdentifier&#x3D;keyid,issuer</span><br><span class="line">basicConstraints&#x3D;CA:FALSE</span><br><span class="line">keyUsage &#x3D; digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment</span><br><span class="line">extendedKeyUsage &#x3D; serverAuth</span><br><span class="line">subjectAltName &#x3D; @alt_names</span><br><span class="line"></span><br><span class="line">[alt_names]</span><br><span class="line">DNS.1&#x3D;harbor.linux.io</span><br><span class="line">DNS.2&#x3D;harbor.linux.io</span><br><span class="line">DNS.3&#x3D;10.42.0.220</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">6. Use the v3.ext file to generate a certificate for your Harbor host.</span><br><span class="line">ssl]# openssl x509 -req -sha512 -days 3650 \</span><br><span class="line">    -extfile v3.ext \</span><br><span class="line">    -CA ca.crt -CAkey ca.key -CAcreateserial \</span><br><span class="line">    -in harbor.linux.io.csr \</span><br><span class="line">    -out harbor.linux.io.crt</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Configure the Harbor YML File</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">~]# vim &#x2F;opt&#x2F;harbor&#x2F;harbor.yml</span><br><span class="line"> #set hostname</span><br><span class="line"> hostname &#x3D; harbor.linux.io</span><br><span class="line"> #set ui_url_protocol</span><br><span class="line"> ui_url_protocol &#x3D; https</span><br><span class="line"> ......</span><br><span class="line"> #The path of cert and key files for nginx, they are applied only the protocol is set to https </span><br><span class="line"> certificate: &#x2F;opt&#x2F;harbor&#x2F;ssl&#x2F;harbor.linux.io.crt</span><br><span class="line"> private_key: &#x2F;opt&#x2F;harbor&#x2F;ssl&#x2F;harbor.linux.io.key</span><br><span class="line"> harbor_admin_password &#x3D; abc123</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Run the <code>prepare</code> script to enable HTTPS</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# cd &#x2F;opt&#x2F;harbor&#x2F; &amp;&amp; .&#x2F;prepare</span><br><span class="line">~]# cd &#x2F;opt&#x2F;harbor&#x2F; &amp;&amp; .&#x2F;install.sh</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. stop harbor image data remains in the file system, so no data is lost.</span><br><span class="line">~]# docker-compose down -v</span><br><span class="line">2. Restart Harbor: docker-compose up -d</span><br></pre></td></tr></table></figure>
+
+<h2 id="Provide-the-Certificates-to-Harbor-and-Docker"><a href="#Provide-the-Certificates-to-Harbor-and-Docker" class="headerlink" title="Provide the Certificates to Harbor and Docker"></a>Provide the Certificates to Harbor and Docker</h2><ul>
+<li>Convert <code>harbor.linux.crt</code> to <code>harbor.linux.io.cert</code>, for use by Docker.</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssl]# openssl x509 -inform PEM -in harbor.linux.io.crt -out harbor.linux.io.cert</span><br></pre></td></tr></table></figure>
+
+
+
+<ul>
+<li>Copy the server certificate, key and CA files into the Docker certificates folder on the Harbor host.</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ssl]# mkdir -pv  &#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;harbor.linux.io&#x2F;</span><br><span class="line">ssl]# cp harbor.linux.io.cert  &#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;harbor.linux.io&#x2F;</span><br><span class="line">ssl]# cp harbor.linux.io.key  &#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;harbor.linux.io&#x2F;</span><br><span class="line">ssl]# cp ca.crt  &#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;harbor.linux.io&#x2F;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# docker login harbor.linux.io -u admin -p abc123</span><br></pre></td></tr></table></figure>
+
+<h2 id="Upload-image-to-Harbor"><a href="#Upload-image-to-Harbor" class="headerlink" title="Upload image to Harbor"></a>Upload image to Harbor</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# docker tag busybox:latest harbor.linux.io&#x2F;library&#x2F;busybox:v1</span><br><span class="line">~]# docker push harbor.linux.io&#x2F;library&#x2F;busybox:v1</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/" data-id="ck88pitji0000xk0lb98yf8p6" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/harbor/" rel="tag">harbor</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/03/26/Kubeadm-%E5%AE%89%E8%A3%85-Kubernetes-v1-15-1/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Kubeadm 安装 Kubernetes v1.15.1</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/harbor/" rel="tag">harbor</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubeadm/" rel="tag">kubeadm</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/harbor/" style="font-size: 10px;">harbor</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/">构建企业级镜像仓库-Harbor_v1.10.1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/26/Kubeadm-%E5%AE%89%E8%A3%85-Kubernetes-v1-15-1/">Kubeadm 安装 Kubernetes v1.15.1</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/24/hello-world/">Hello World</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
