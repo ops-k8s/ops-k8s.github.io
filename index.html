@@ -64,6 +64,123 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Pod-Controllers-详解" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/" class="article-date">
+  <time datetime="2020-03-27T09:50:51.000Z" itemprop="datePublished">2020-03-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/">Pod Controllers 详解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Pod-Contrallers-详解"><a href="#Pod-Contrallers-详解" class="headerlink" title="#Pod Contrallers 详解"></a>#Pod Contrallers 详解</h2><p>Kubernetes 集群中，所有的Pod都是都会跟着环境的变化，而发生变化，可能某个磁盘出现问题，又或者某个节点出现问题，那么其上的 Pod 就需要发生变动，而这些变动需要通过一种叫控制器的对象来控制，这些对象会时时刻刻通过监控Api-Server 共享的状态，将集群中的变动稳定在用户所期望的状态。</p>
+<img src="../images/kubernetes/controller.png" style="zoom:50%;" />
+
+<h2 id="ReplicaSet"><a href="#ReplicaSet" class="headerlink" title="ReplicaSet"></a>ReplicaSet</h2><p>ReplicaSet的目的是维护在任何时间段运行的稳定的Pod数量。因此，它通常用于保证指定数量的相同Pod的可用性。其编排文件中必须的几个字段包括：<code>apiVersion</code>、<code>kind</code>、<code>metadata</code>、<code>spec</code>以及<code>spec.replicas</code>、<code>spec.template</code>、<code>spec.selector</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">~]# cat replicaset.yaml </span><br><span class="line">apiVersion: extensions&#x2F;v1beta1</span><br><span class="line">kind: ReplicaSet</span><br><span class="line">metadata:</span><br><span class="line">  name: replicaset-demo</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  replicas: 2</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: myapp</span><br><span class="line">      version: v1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: replicaset-pod</span><br><span class="line">      namespace: default</span><br><span class="line">      labels:</span><br><span class="line">        app: myapp</span><br><span class="line">        version: v1</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: replicaset-containe</span><br><span class="line">        image: myapp:v1</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. 列出 rs： kubectl get rs</span><br><span class="line">2. 删除 rs： kubectl delete rs&#x2F;replicaset-demo</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Deployments"><a href="#Deployments" class="headerlink" title="Deployments"></a>Deployments</h2><p>管ReplicaSet可以单独使用，但是如今推荐使用Deployments做为Pod编排的（新建、删除、更新）的主要方式。Deploymnets是更高一级的抽象，提供了RS的管理功能。</p>
+<img src="../images/kubernetes/ds.png" style="zoom: 25%;" />
+
+<p>Deployment实际上是对RS和Pod的管理，它总先是创建RS，由RS创建Pods。由Deployment创建的RS的命名规则为<code>[DEPLOYMENT-NAME]-[POD-TEMPLATE-HASH-VALUE]</code>，建议不要手工维护Deployment创建的RS。Deployment的更新仅在Pod的template发生更新的情况下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">~]# vim deployment-demo.yaml </span><br><span class="line">apiVersion: apps&#x2F;v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: deployment-demo</span><br><span class="line">  namespace: default </span><br><span class="line">  labels:</span><br><span class="line">    app: front</span><br><span class="line">spec:</span><br><span class="line">  replicas: 2</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: front</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: myapp-ds-pod</span><br><span class="line">      labels:</span><br><span class="line">        app: front</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: myapp-container</span><br><span class="line">        image: myapp:v1</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>创建Deployment</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  apply -f deployment-demo.yaml</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>更新Deployment</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  set image deployment&#x2F;deployment-demo myapp-container&#x3D;ikubernetes&#x2F;myapp:v2</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>回滚可以使用命令行，也可以修稿资源清单文件。默认回滚记录10个版本，可以通过<code>.spec.revisionHistoryLimit</code>修改。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl rollout undo  deployment deployment-demo </span><br><span class="line">~]# kubectl  rollout undo --to-revision&#x3D;3 deployment deployment-demo # 回滚到指定版本</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>扩容</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl scale deployment&#x2F;deployment-demo --replicas&#x3D;5 </span><br><span class="line">如果集群打开了自动扩容功能，还可以设置自动扩容的条件:</span><br><span class="line">~]# kubectl autoscale deployment&#x2F;deployment-demo--min&#x3D;10 --max&#x3D;15 --cpu-percent&#x3D;80</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>暂停部署过程</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl rollout pause deployment&#x2F;nginx-deployment</span><br><span class="line">~]# kubectl rollout resume deployment&#x2F;nginx-deployment</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>更新策略<ul>
+<li><code>trategy .spec.strategy</code>：Recreate和RollingUpdate<ul>
+<li>Recreate:：策略为先杀死旧Pods再创建新Pods，</li>
+<li>RollingUpdate：一边创建新Pods，一边杀掉旧Pods.</li>
+</ul>
+</li>
+<li><code>Max Unavailable .spec.strategy.rollingUpdate.maxUnavailable</code>：更新过程中允许不可用Pods的最大比率，默认为25%</li>
+<li><code>Max Surge .spec.strategy.rollingUpdate.maxSurge</code>：更新过程中允许超过replicas的最大Pods数量，默认为25%</li>
+<li><code>Progress Deadline Seconds .spec.progressDeadlineSeconds</code> ：可选参数，设置系统报告进展的时间</li>
+<li><code>Min Ready Seconds .spec.minReadySeconds</code>：可选参数，设置新建Pod能正常运行的最小时间间隔</li>
+<li><code>Revision History Limit .spec.revisionHistoryLimit</code> 可选参数，设置历史记录数量</li>
+</ul>
+</li>
+</ul>
+<h2 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h2><p>使用Kubernetes来调度无状态的应用非常简单，StatefulSets 用来部署有状态的服务。<a href="https://www.baidu.com" target="_blank" rel="noopener">详情请点接这里</a></p>
+<h2 id="DaemonSet"><a href="#DaemonSet" class="headerlink" title="DaemonSet"></a>DaemonSet</h2><p>DaemonSet确保所有的Node上都运行了一份Pod的副本，只要Node加入到集群中，Pod就会在Node上创建。典型的应用场景包括：运行一个存储集群（glusterd,ceph）、运行一个日志收集集群（fluentd,logstash）、运行监控程序（Prometheus Node Exporter,collectd,Datadog等）。默认情况下DaemonSet由DaemonSet控制器调度，如果设置了<code>nodeAffinity</code>参数，则会有默认的scheduler调度。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">controllers&#x2F;daemonset.yaml </span><br><span class="line"></span><br><span class="line">apiVersion: apps&#x2F;v1</span><br><span class="line">kind: DaemonSet</span><br><span class="line">metadata:</span><br><span class="line">  name: fluentd-elasticsearch</span><br><span class="line">  namespace: kube-system</span><br><span class="line">  labels:</span><br><span class="line">    k8s-app: fluentd-logging</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      name: fluentd-elasticsearch</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        name: fluentd-elasticsearch</span><br><span class="line">    spec:</span><br><span class="line">      tolerations:</span><br><span class="line">      - key: node-role.kubernetes.io&#x2F;master</span><br><span class="line">        effect: NoSchedule</span><br><span class="line">      containers:</span><br><span class="line">      - name: fluentd-elasticsearch</span><br><span class="line">        image: quay.io&#x2F;fluentd_elasticsearch&#x2F;fluentd:v2.5.2</span><br><span class="line">        resources:</span><br><span class="line">          limits:</span><br><span class="line">            memory: 200Mi</span><br><span class="line">          requests:</span><br><span class="line">            cpu: 100m</span><br><span class="line">            memory: 200Mi</span><br><span class="line">        volumeMounts:</span><br><span class="line">        - name: varlog</span><br><span class="line">          mountPath: &#x2F;var&#x2F;log</span><br><span class="line">        - name: varlibdockercontainers</span><br><span class="line">          mountPath: &#x2F;var&#x2F;lib&#x2F;docker&#x2F;containers</span><br><span class="line">          readOnly: true</span><br><span class="line">      terminationGracePeriodSeconds: 30</span><br><span class="line">      volumes:</span><br><span class="line">      - name: varlog</span><br><span class="line">        hostPath:</span><br><span class="line">          path: &#x2F;var&#x2F;log</span><br><span class="line">      - name: varlibdockercontainers</span><br><span class="line">        hostPath:</span><br><span class="line">          path: &#x2F;var&#x2F;lib&#x2F;docker&#x2F;containers</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  get daemonset -n kube-system -w</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>我们可以给特定的主机节点打<code>label</code>运行特定的守护进程</p>
+</blockquote>
+<h2 id="Jobs"><a href="#Jobs" class="headerlink" title="Jobs"></a>Jobs</h2><p>Job通过创建一个或多个Pod来运行特定的任务，当正常完成任务的Pod数量达到设定标准时，Job就会结束。删除Job会将Job创建的所有Pods删除</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: batch&#x2F;v1</span><br><span class="line">kind: Job</span><br><span class="line">metadata:</span><br><span class="line">  name: pi</span><br><span class="line">spec:</span><br><span class="line">  completions: 5 # 指定任务执行次数，顺序执行</span><br><span class="line">  parallelism: 2 # 指定并行任务的数量</span><br><span class="line">  backoffLimit: 4 # 允许任务失败的次数</span><br><span class="line">  activeDeadlineSeconds: 100    # 允许任务执行的最长时间</span><br><span class="line">  template:</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: pi</span><br><span class="line">        image: docker.io&#x2F;perl</span><br><span class="line">        command: [&quot;perl&quot;, &quot;-Mbignum&#x3D;bpi&quot;, &quot;-wle&quot;, &quot;print bpid(2000)&quot;]</span><br><span class="line">      restartPolicy: Never</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>非并行的Job，通常只启动一个Pod执行任务</li>
+<li>带有固定完成数量的并行Job，需要将<code>.spec.completions</code>设置为非零值</li>
+<li>与队列结合的并行Job，不需要设置<code>.spec.completions</code>，设置<code>.spec.parallelism</code></li>
+</ul>
+<blockquote>
+<p>Kubernetes提供的并行Job并不适合科学计算或者执行相关的任务，更适合执行邮件发送、渲染、文件转义等等单独的任务</p>
+</blockquote>
+<h2 id="CronJob"><a href="#CronJob" class="headerlink" title="CronJob"></a>CronJob</h2><p>Cron Job是根据时间来自动创建Job对象。类似于Crontab，周期性的执行一个任务。每次执行期间，会创建一个Job对象。也可能会创建两个或者不创建Job，这个情况可能会发生，因此应该保证Job是幂等的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: batch&#x2F;v1beta1</span><br><span class="line">kind: CronJob</span><br><span class="line">metadata:</span><br><span class="line">  name: hello</span><br><span class="line">spec:</span><br><span class="line">  schedule: &quot;*&#x2F;1 * * * *&quot;</span><br><span class="line">  jobTemplate:</span><br><span class="line">    spec:</span><br><span class="line">      template:</span><br><span class="line">        spec:</span><br><span class="line">          containers:</span><br><span class="line">          - name: hello</span><br><span class="line">            image: docker.io&#x2F;busybox</span><br><span class="line">            args:</span><br><span class="line">            - &#x2F;bin&#x2F;sh</span><br><span class="line">            - -c</span><br><span class="line">            - date; echo Hello from the Kubernetes cluster</span><br><span class="line">          restartPolicy: OnFailure</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/" data-id="ck8a6qy7e00002x0l0z4kal52" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Working-with-Pods" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/27/Working-with-Pods/" class="article-date">
@@ -112,6 +229,8 @@
 </li>
 </ul>
 <h2 id="标签管理"><a href="#标签管理" class="headerlink" title="标签管理"></a>标签管理</h2><p>标签是Kubernetes管理Pod的重要依据，我们可以在Pod yaml文件中 metadata 中指定，也可以通过命令行进行管理。</p>
+<img src=" ../images/kubernetes/labels.png" style="zoom:50%;" />
+
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">版本标签：release：stable、release：canary、release、beta</span><br><span class="line">环境标签：environment：dev、environment：qa、environment：production</span><br><span class="line">应用标签：app：ui、app：as、app：sc</span><br><span class="line">架构层级标签：tier：frontend、tier：backend、tier：cache</span><br><span class="line">分区标签：partition：customerA、partition：customerB</span><br><span class="line">品控级别标签：track：daily、track：weekly</span><br></pre></td></tr></table></figure>
 
 <ul>
@@ -754,7 +873,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Pod/" style="font-size: 10px;">Pod</a> <a href="/tags/harbor/" style="font-size: 20px;">harbor</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a> <a href="/tags/kubernetes/" style="font-size: 20px;">kubernetes</a>
+      <a href="/tags/Pod/" style="font-size: 10px;">Pod</a> <a href="/tags/harbor/" style="font-size: 15px;">harbor</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a> <a href="/tags/kubernetes/" style="font-size: 20px;">kubernetes</a>
     </div>
   </div>
 
@@ -776,6 +895,10 @@
       <ul>
         
           <li>
+            <a href="/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/">Pod Controllers 详解</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/27/Working-with-Pods/">Working with Pods</a>
           </li>
         
@@ -789,10 +912,6 @@
         
           <li>
             <a href="/2020/03/27/Kubernetes-%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/">Kubernetes 基础入门</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/27/Pull-an-Image-from-a-Private-Registry/">Pull an Image from a Private Registry</a>
           </li>
         
       </ul>
