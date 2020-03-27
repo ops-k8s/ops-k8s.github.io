@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Hexo 博客搭建 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Github账号注册及仓库创建    仓库名必须为：username.github.io  环境配置 安装git： 安装node：https:&#x2F;&#x2F;nodejs.org&#x2F;en 安装 hexo：sudo npm install -g hexo-cli 安装hexo-deployer-git 插件：npm install hexo-deployer-git --save 初始化博客框架:cd ~&#x2F;Do">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hexo 博客搭建">
+<meta property="og:url" content="http://yoursite.com/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Github账号注册及仓库创建    仓库名必须为：username.github.io  环境配置 安装git： 安装node：https:&#x2F;&#x2F;nodejs.org&#x2F;en 安装 hexo：sudo npm install -g hexo-cli 安装hexo-deployer-git 插件：npm install hexo-deployer-git --save 初始化博客框架:cd ~&#x2F;Do">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2020/03/27/images/hexo/hexo.png">
+<meta property="article:published_time" content="2020-03-27T06:18:03.000Z">
+<meta property="article:modified_time" content="2020-03-27T06:27:41.536Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/03/27/images/hexo/hexo.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Hexo-博客搭建" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/" class="article-date">
+  <time datetime="2020-03-27T06:18:03.000Z" itemprop="datePublished">2020-03-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Hexo 博客搭建
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>Github账号注册及仓库创建</li>
+</ul>
+<p><img src="../images/hexo/hexo.png" alt=""></p>
+<blockquote>
+<p>仓库名必须为：<code>username.github.io</code></p>
+</blockquote>
+<h4 id="环境配置"><a href="#环境配置" class="headerlink" title="环境配置"></a>环境配置</h4><ol>
+<li>安装git：</li>
+<li>安装node：<code>https://nodejs.org/en</code></li>
+<li>安装 hexo：<code>sudo npm install -g hexo-cli</code></li>
+<li>安装hexo-deployer-git 插件：<code>npm install hexo-deployer-git --save</code></li>
+<li>初始化博客框架:<code>cd ~/Documents/HexoBlog &amp;&amp; hexo init</code></li>
+<li>启动 hexo： <code>hexo -s</code></li>
+</ol>
+<h4 id="博客关联到Github仓库，编辑-config-yml文件"><a href="#博客关联到Github仓库，编辑-config-yml文件" class="headerlink" title="博客关联到Github仓库，编辑_config.yml文件"></a>博客关联到Github仓库，编辑<code>_config.yml</code>文件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">type: git</span><br><span class="line">repo: https:&#x2F;&#x2F;github.com&#x2F;ops-k8s&#x2F;ops-k8s.github.io.git</span><br><span class="line">branch: master</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>推送到远程 github</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br><span class="line"></span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>访问：<code>https://ops-k8s.github.io/</code></li>
+</ul>
+<h4 id="Hexo博客美化及功能增添"><a href="#Hexo博客美化及功能增添" class="headerlink" title="Hexo博客美化及功能增添"></a>Hexo博客美化及功能增添</h4><ol>
+<li>选主题：<code>https://hexo.io/themes/</code></li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd ~&#x2F;Documents&#x2F;HexoBlog</span><br><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;TriDiamond&#x2F;hexo-theme-obsidian.git themes&#x2F;obsidian</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>ref: <a href="https://github.com/TriDiamond/hexo-theme-obsidian" target="_blank" rel="noopener">https://github.com/TriDiamond/hexo-theme-obsidian</a></p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vim _config.yaml</span><br><span class="line"></span><br><span class="line">theme: obsidian</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://www.jianshu.com/p/77db3862595c" target="_blank" rel="noopener">https://www.jianshu.com/p/77db3862595c</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/" data-id="ck89t3nqq0000fj0l4c9c1o2b" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/03/27/Kubernetes-Addons-of-Dashboard/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Kubernetes Addons of Dashboard</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/harbor/" rel="tag">harbor</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubeadm/" rel="tag">kubeadm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/harbor/" style="font-size: 20px;">harbor</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a> <a href="/tags/kubernetes/" style="font-size: 20px;">kubernetes</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/">Hexo 博客搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Kubernetes-Addons-of-Dashboard/">Kubernetes Addons of Dashboard</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Kubernetes-%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/">Kubernetes 基础入门</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Pull-an-Image-from-a-Private-Registry/">Pull an Image from a Private Registry</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/">构建企业级镜像仓库-Harbor_v1.10.1</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
