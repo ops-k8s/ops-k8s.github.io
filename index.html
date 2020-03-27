@@ -64,6 +64,56 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Pull-an-Image-from-a-Private-Registry" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/27/Pull-an-Image-from-a-Private-Registry/" class="article-date">
+  <time datetime="2020-03-27T01:55:27.000Z" itemprop="datePublished">2020-03-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/27/Pull-an-Image-from-a-Private-Registry/">Pull an Image from a Private Registry</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Pull-an-Image-from-a-Private-Registry"><a href="#Pull-an-Image-from-a-Private-Registry" class="headerlink" title="Pull an Image from a Private Registry"></a><a href="https://v1-16.docs.kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/" target="_blank" rel="noopener">Pull an Image from a Private Registry</a></h1><h2 id="Log-in-to-Docker"><a href="#Log-in-to-Docker" class="headerlink" title="Log in to Docker"></a>Log in to Docker</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">~]# docker login harbor.linux.io -u admin -p abc123</span><br><span class="line">~]# cat .docker&#x2F;config.json </span><br><span class="line">&#123;</span><br><span class="line">        &quot;auths&quot;: &#123;</span><br><span class="line">                &quot;harbor.linux.io&quot;: &#123;</span><br><span class="line">                        &quot;auth&quot;: &quot;YWRtaW46YWJjMTIz&quot;</span><br><span class="line">                &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;HttpHeaders&quot;: &#123;</span><br><span class="line">                &quot;User-Agent&quot;: &quot;Docker-Client&#x2F;18.06.0-ce (linux)&quot;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Create-a-Secret-by-providing-credentials-on-the-command-line"><a href="#Create-a-Secret-by-providing-credentials-on-the-command-line" class="headerlink" title="Create a Secret by providing credentials on the command line"></a>Create a Secret by providing credentials on the command line</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create secret docker-registry regcred --docker-server&#x3D;harbor.linux.io --docker-username&#x3D;admin --docker-password&#x3D;abc123 --docker-email&#x3D;1071102039@qq.com</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Inspecting-the-Secret-regcred"><a href="#Inspecting-the-Secret-regcred" class="headerlink" title="Inspecting the Secret regcred"></a>Inspecting the Secret <code>regcred</code></h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  get secret regcred -o yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">data:</span><br><span class="line">  .dockerconfigjson: eyJhdXRocyI6eyJoYXJib3IubGludXguaW8iOnsidXNlcm5hbWUiOiJhZG1pbiIsInBhc3N3b3JkIjoiYWJjMTIzIiwiZW1haWwiOiIxMDcxMTAyMDM5QHFxLmNvbSIsImF1dGgiOiJZV1J0YVc0NllXSmpNVEl6In19fQ&#x3D;&#x3D;</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  creationTimestamp: &quot;2020-03-27T02:15:39Z&quot;</span><br><span class="line">  name: regcred</span><br><span class="line">  namespace: default</span><br><span class="line">  resourceVersion: &quot;68835&quot;</span><br><span class="line">  selfLink: &#x2F;api&#x2F;v1&#x2F;namespaces&#x2F;default&#x2F;secrets&#x2F;regcred</span><br><span class="line">  uid: a33772df-0ae6-4fdd-956c-0526d4a1e0a7</span><br><span class="line">type: kubernetes.io&#x2F;dockerconfigjson</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl get secret regcred --output&#x3D;&quot;jsonpath&#x3D;&#123;.data.\.dockerconfigjson&#125;&quot; | base64 --decode</span><br></pre></td></tr></table></figure>
+
+<h2 id="Create-a-Pod-that-uses-your-Secret"><a href="#Create-a-Pod-that-uses-your-Secret" class="headerlink" title="Create a Pod that uses your Secret"></a>Create a Pod that uses your Secret</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">mainfests]# cat private-reg-pod.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: private-reg-pod</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">  - name: private-reg-container</span><br><span class="line">    image: harbor.linux.io&#x2F;base-images&#x2F;myapp:v1</span><br><span class="line">  imagePullSecrets:</span><br><span class="line">  - name: regcred</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/27/Pull-an-Image-from-a-Private-Registry/" data-id="ck89kltsg0000w80l565b35u8" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/harbor/" rel="tag">harbor</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-构建企业级镜像仓库-Harbor" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/" class="article-date">
@@ -356,7 +406,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/harbor/" style="font-size: 10px;">harbor</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a>
+      <a href="/tags/harbor/" style="font-size: 20px;">harbor</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a>
     </div>
   </div>
 
@@ -376,6 +426,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/03/27/Pull-an-Image-from-a-Private-Registry/">Pull an Image from a Private Registry</a>
+          </li>
         
           <li>
             <a href="/2020/03/26/%E6%9E%84%E5%BB%BA%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%95%9C%E5%83%8F%E4%BB%93%E5%BA%93-Harbor/">构建企业级镜像仓库-Harbor_v1.10.1</a>
