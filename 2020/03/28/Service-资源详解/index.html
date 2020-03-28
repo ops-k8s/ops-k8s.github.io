@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Service 资源详解 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Service 资源详解在 Kubernetes 集群中，Pod随时都有可能被控制器新建或迁移，那么其上的IP也会发生变动，这种动态性没法给用户提供一个固定访问问口地址给用户，为了解决这类问题，Kubernetes引入了Service的概念。Service 为用户提供了一个固定的访问入口。我们可以通过标签关联后段的Pod，这样当后段的Pod发生变动时，新建立的Pod会自动关联到我们的Service">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Service 资源详解">
+<meta property="og:url" content="http://yoursite.com/2020/03/28/Service-%E8%B5%84%E6%BA%90%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Service 资源详解在 Kubernetes 集群中，Pod随时都有可能被控制器新建或迁移，那么其上的IP也会发生变动，这种动态性没法给用户提供一个固定访问问口地址给用户，为了解决这类问题，Kubernetes引入了Service的概念。Service 为用户提供了一个固定的访问入口。我们可以通过标签关联后段的Pod，这样当后段的Pod发生变动时，新建立的Pod会自动关联到我们的Service">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2020/03/28/images/kubernetes/service1.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/28/images/kubernetes/userspace.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/28/images/kubernetes/iptables.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/28/images/kubernetes/ipvs.png">
+<meta property="article:published_time" content="2020-03-28T10:01:53.000Z">
+<meta property="article:modified_time" content="2020-03-28T14:27:54.689Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="kubernetes">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/03/28/images/kubernetes/service1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Service-资源详解" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/28/Service-%E8%B5%84%E6%BA%90%E8%AF%A6%E8%A7%A3/" class="article-date">
+  <time datetime="2020-03-28T10:01:53.000Z" itemprop="datePublished">2020-03-28</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Service 资源详解
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Service-资源详解"><a href="#Service-资源详解" class="headerlink" title="Service 资源详解"></a>Service 资源详解</h1><p>在 Kubernetes 集群中，Pod随时都有可能被控制器新建或迁移，那么其上的IP也会发生变动，这种动态性没法给用户提供一个固定访问问口地址给用户，为了解决这类问题，Kubernetes引入了Service的概念。Service 为用户提供了一个固定的访问入口。我们可以通过标签关联后段的Pod，这样当后段的Pod发生变动时，新建立的Pod会自动关联到我们的Service上，这就是所谓的自动发现。</p>
+<img src="../images/kubernetes/service1.png" style="zoom:50%;" />
+
+<h2 id="Service代理模式分类"><a href="#Service代理模式分类" class="headerlink" title="Service代理模式分类"></a>Service代理模式分类</h2><p>Kubernetes 集群中，每个Node 都运行一个 kube-proxy 进程，kube-proxy 负责为 Service 实现一种 虚拟IP(VIP)的形式，而不是ExterName的形式。在Kubernetes v1.0的版本，代理完全是在 userspace，在Kubernetes v1.1 版本，新增加iptables代理，但并不是默认模式。从Kubernetes v1.2起，默认就是iptables模式代理，在Kubernetes v1.8.0-beta.0 中，默认添加了ipvs 代理，在Kubernetes v1.14 版本中，默认使用了 ipvs 代理。</p>
+<ul>
+<li><strong>UserSpace</strong> 用户空间模式</li>
+</ul>
+<p>对于每个Service对象，kube-proxy会随机打开一个本地端口，任何到达此代理端口的请求都会被SNAT转发至当前Service对象后段的Pod对象，默认的调度算法是 <code>round-robin</code>。</p>
+<img src="../images/kubernetes/userspace.png" style="zoom:30%;" />
+
+<ul>
+<li><strong>iptables代理模式</strong></li>
+</ul>
+<p>对于每个Service对象，kube-proxy会创建iptables规则直接捕获到达ClusterIp和Port的流量，并重定向至当前Service所关联的后段Pod对象。对于userspace模式来说，iptables不再将流量在用户空间和内核空间来回切换，因此也就更为高效和可靠。</p>
+<img src="../images/kubernetes/iptables.png" style="zoom:30%;" />
+
+<ul>
+<li><strong>ipvs代理模式</strong></li>
+</ul>
+<p>与iptables代理模式不同之处在于，用户群请求的流量调度直接由ipvs实现，ipvs构建在netfilter的钩子函数上，使用hash表座位底层数据结构并工作在内核空间，所以相对iptables来说它具有流量转发速度快，规则同步性能好的特性。ipvs支持更多的算法，例如：rr、lc、dh、、sed、nq等</p>
+<img src="../images/kubernetes/ipvs.png" style="zoom:30%;" />
+
+<h2 id="Service-类型"><a href="#Service-类型" class="headerlink" title="Service 类型"></a>Service 类型</h2><ul>
+<li><strong>ClusterIP</strong>：默认类型，仅用于Kubernetes集群内部访问</li>
+</ul>
+<p>示例：假设我们有一组Pod ，每个Pod都侦听TCP端口80并带有标签<code>app=MyApp</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">~]# cat myapp-svc.yaml</span><br><span class="line">apiVersion: apps&#x2F;v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: example-dep</span><br><span class="line">spec:</span><br><span class="line">  replicas: 3</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: MyApp</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: MyApp</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: myapp-container</span><br><span class="line">        image: ikubernetes&#x2F;myapp:v1</span><br><span class="line">        ports:</span><br><span class="line">          - name: http</span><br><span class="line">            containerPort: 80</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: myapp-svc-clusterip</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">   selector:</span><br><span class="line">     app: MyApp</span><br><span class="line">   ports:</span><br><span class="line">   - name: http</span><br><span class="line">     protocol: TCP</span><br><span class="line">     port: 80</span><br><span class="line">     targetPort: 80</span><br><span class="line">   type: ClusterIP</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">2. 多端口代理模式</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service-clusterip</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    app: MyApp</span><br><span class="line">  ports:</span><br><span class="line">    - name: http</span><br><span class="line">      protocol: TCP</span><br><span class="line">      port: 80</span><br><span class="line">      targetPort: 9376</span><br><span class="line">    - name: https</span><br><span class="line">      protocol: TCP</span><br><span class="line">      port: 443</span><br><span class="line">      targetPort: 9377</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>NodePort</strong>：在 ClusterIP的基础上，在每个Node节点上绑定一个端口，这种方式可以通过<code>IP+Port</code>的方式接入外部流量</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">~]# vim myapp-svc-nodeport.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: myapp-svc-nodeport</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">   selector:</span><br><span class="line">     app: MyApp</span><br><span class="line">   ports:</span><br><span class="line">   - name: http</span><br><span class="line">     protocol: TCP</span><br><span class="line">     port: 80</span><br><span class="line">     nodePort: 30080</span><br><span class="line">     targetPort: 80</span><br><span class="line">   type: NodePort</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Headless：有时我们需要或者不想要负载均衡以及单独的Service IP。遇到这种情况，我们可以指定ClusterIP的值为None来创建HeadlessService,这样解析出来地址是则为后段所有Pod的IP地址。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">~]# vim myapp-svc-headless.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: myapp-svc-headless</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">   clusterIP: None</span><br><span class="line">   selector:</span><br><span class="line">     app: MyApp</span><br><span class="line">   ports:</span><br><span class="line">   - name: http</span><br><span class="line">     protocol: TCP</span><br><span class="line">     port: 80</span><br><span class="line">     targetPort: 80</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"> ~]# dig -t A myapp-svc-headless.default.svc.cluster.local. @10.244.0.6</span><br><span class="line"> ;; ANSWER SECTION:</span><br><span class="line">myapp-svc-headless.default.svc.cluster.local. 30 IN A 10.244.1.43</span><br><span class="line">myapp-svc-headless.default.svc.cluster.local. 30 IN A 10.244.3.44</span><br><span class="line">myapp-svc-headless.default.svc.cluster.local. 30 IN A 10.244.2.29</span><br><span class="line">~]# kubectl  get pod  -o wide</span><br><span class="line">NAME                           READY   STATUS    RESTARTS   AGE   IP            NODE             NOMINATED NODE   READINESS GATES</span><br><span class="line">example-dep-6dc749d854-kvtqg   1&#x2F;1     Running   0          25m   10.244.3.44   node3.linux.io   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">example-dep-6dc749d854-n2tqq   1&#x2F;1     Running   0          25m   10.244.1.43   node1.linux.io   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">example-dep-6dc749d854-ncpst   1&#x2F;1     Running   0          25m   10.244.2.29   node2.linux.io   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>LoadBalancer：在NodePort的基础上借助一个cloud provider创建一个外部的负载均衡器，并将请求转发到NodePort</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    app: MyApp</span><br><span class="line">  ports:</span><br><span class="line">    - protocol: TCP</span><br><span class="line">      port: 80</span><br><span class="line">      targetPort: 9376</span><br><span class="line">  clusterIP: 10.0.171.239</span><br><span class="line">  type: LoadBalancer</span><br><span class="line">status:</span><br><span class="line">  loadBalancer:</span><br><span class="line">    ingress:</span><br><span class="line">    - ip: 192.0.2.127 #此为外部SLB地址</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>ExternalName：把集群外部的流量直接引入到集群内部直接使用，没有任何代理被创建。只有Kubernetes 1.7+的版本或者高版本kube-dns才支持</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    app: MyApp</span><br><span class="line">  ports:</span><br><span class="line">    - name: http</span><br><span class="line">      protocol: TCP</span><br><span class="line">      port: 80</span><br><span class="line">      targetPort: 9376</span><br><span class="line">  externalIPs:</span><br><span class="line">    - 80.11.12.10</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/28/Service-%E8%B5%84%E6%BA%90%E8%AF%A6%E8%A7%A3/" data-id="ck8bpmtgc0000c60l1hgscqb9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Pod Controllers 详解</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Pod/" rel="tag">Pod</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/harbor/" rel="tag">harbor</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubeadm/" rel="tag">kubeadm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Pod/" style="font-size: 10px;">Pod</a> <a href="/tags/harbor/" style="font-size: 15px;">harbor</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a> <a href="/tags/kubernetes/" style="font-size: 20px;">kubernetes</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/03/28/Service-%E8%B5%84%E6%BA%90%E8%AF%A6%E8%A7%A3/">Service 资源详解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/">Pod Controllers 详解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Working-with-Pods/">Working with Pods</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/">Hexo 博客搭建</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Kubernetes-Addons-of-Dashboard/">Kubernetes Addons of Dashboard</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
