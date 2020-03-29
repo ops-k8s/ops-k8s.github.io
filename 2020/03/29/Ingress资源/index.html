@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Ingress资源 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Kubernetes 提供了两种负载均衡的机制用于发布公共服务，一种是工作在传输层的Service资源，一种是Ingress资源。前者只能实现”TCP负载均衡”，而无法实现 HTTPS 协议，而Ingress 的出现为我们提供了应用层HTTP(S)的访问能力。 Ingress 是 Kubernetes API 的标准类型资源，它是一组 基于DNS 名称或者 URL 路径把用户请求转发到指定的Ser">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ingress资源">
+<meta property="og:url" content="http://yoursite.com/2020/03/29/Ingress%E8%B5%84%E6%BA%90/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Kubernetes 提供了两种负载均衡的机制用于发布公共服务，一种是工作在传输层的Service资源，一种是Ingress资源。前者只能实现”TCP负载均衡”，而无法实现 HTTPS 协议，而Ingress 的出现为我们提供了应用层HTTP(S)的访问能力。 Ingress 是 Kubernetes API 的标准类型资源，它是一组 基于DNS 名称或者 URL 路径把用户请求转发到指定的Ser">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://yoursite.com/2020/03/29/images/kubernetes/ingress.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/29/images/kubernetes/single-ingress.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/29/images/kubernetes/base-host.png">
+<meta property="og:image" content="http://yoursite.com/2020/03/29/images/kubernetes/https.png">
+<meta property="article:published_time" content="2020-03-29T03:24:10.000Z">
+<meta property="article:modified_time" content="2020-03-29T03:30:37.341Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/03/29/images/kubernetes/ingress.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Ingress资源" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/29/Ingress%E8%B5%84%E6%BA%90/" class="article-date">
+  <time datetime="2020-03-29T03:24:10.000Z" itemprop="datePublished">2020-03-29</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Ingress资源
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Kubernetes 提供了两种负载均衡的机制用于发布公共服务，一种是工作在传输层的Service资源，一种是Ingress资源。前者只能实现”TCP负载均衡”，而无法实现 HTTPS 协议，而Ingress 的出现为我们提供了应用层HTTP(S)的访问能力。</p>
+<p>Ingress 是 Kubernetes API 的标准类型资源，它是一组 基于DNS 名称或者 URL 路径把用户请求转发到指定的Service资源的规则，用于将集群外部的请求流量转发至集群内部完成服务发布。然而， Ingress 本身并不能进行流量转发，它仅仅是一组路由规则，如果想要真正的使这对规则生效，则需要先部署 Ingress 的控制器，Ingress 控制器能够监听某一个套接字，然后根据Ingress上的路由规则对用户的请求进行转发。</p>
+<img src="../images/kubernetes/ingress.png" style="zoom:40%;" />
+
+<h2 id="Ingress-Controller-部署"><a href="#Ingress-Controller-部署" class="headerlink" title="Ingress Controller 部署"></a>Ingress Controller 部署</h2><p>Ingress controller 可以由任何具有反向代理功能的服务程序实现，如Nginx、Envory、HaProxy和Traefik等。这里我们部署 ingree-nginx。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">1. 前提准备</span><br><span class="line">ingress]# wget https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;kubernetes&#x2F;ingress-nginx&#x2F;nginx-0.30.0&#x2F;deploy&#x2F;static&#x2F;mandatory.yaml</span><br><span class="line">ingress]# sed -i &#39;s@quay.io@quay.azk8s.cn@g&#39;  mandatory.yaml</span><br><span class="line">ingress]# kubectl apply -f mandatory.yaml</span><br><span class="line">ingress]# kubectl  get pod -n ingress-nginx</span><br><span class="line">NAME                                        READY   STATUS    RESTARTS   AGE</span><br><span class="line">nginx-ingress-controller-84bddb4478-99qb8   1&#x2F;1     Running   0          4m53s</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>我们也可以直接将 <code>mandatory.yaml</code>，修改成 DaemonSet 运行的方式，并且通过 nodeSelector 的方式，直接部署在具有公网ip地址的节点上，这样，我们就可以不用部署 Service 来接入流量了。</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps&#x2F;v1</span><br><span class="line">kind: Deployment # 修改为DaemonSet</span><br><span class="line">...</span><br><span class="line">spec:</span><br><span class="line"> #replicas: 1</span><br><span class="line">   nodeSelector:</span><br><span class="line">       matchLabels:</span><br><span class="line">           ingress: nginx</span><br></pre></td></tr></table></figure>
+
+<h2 id="为-Ingress-nginx-控制器创建一个Service"><a href="#为-Ingress-nginx-控制器创建一个Service" class="headerlink" title="为 Ingress-nginx 控制器创建一个Service"></a>为 Ingress-nginx 控制器创建一个Service</h2><p>ingress-nginx 本身不能介入外部流量，所以我们需要为此控制器创建一个 Service 用来接入外部流量，此Service的类型为nodePort。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ingress]# wget https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;kubernetes&#x2F;ingress-nginx&#x2F;nginx-0.30.0&#x2F;deploy&#x2F;static&#x2F;provider&#x2F;baremetal&#x2F;service-nodeport.yaml</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">ingress]# cat service-nodeport.yaml</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: ingress-nginx</span><br><span class="line">  namespace: ingress-nginx</span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io&#x2F;name: ingress-nginx</span><br><span class="line">    app.kubernetes.io&#x2F;part-of: ingress-nginx</span><br><span class="line">spec:</span><br><span class="line">  type: NodePort</span><br><span class="line">  ports:</span><br><span class="line">    - name: http</span><br><span class="line">      port: 80</span><br><span class="line">      targetPort: 80  </span><br><span class="line">      nodePort: 30080 # 使用固定端口</span><br><span class="line">      protocol: TCP</span><br><span class="line">    - name: https</span><br><span class="line">      port: 443</span><br><span class="line">      targetPort: 443</span><br><span class="line">      nodePort: 30443 # 使用固定端口</span><br><span class="line">      protocol: TCP</span><br><span class="line">  selector:</span><br><span class="line">    app.kubernetes.io&#x2F;name: ingress-nginx</span><br><span class="line">    app.kubernetes.io&#x2F;part-of: ingress-nginx</span><br></pre></td></tr></table></figure>
+
+<h2 id="创建两个-后段Service-用来演示Ingress-功能"><a href="#创建两个-后段Service-用来演示Ingress-功能" class="headerlink" title="创建两个 后段Service 用来演示Ingress 功能"></a>创建两个 后段Service 用来演示Ingress 功能</h2><p>这样我们的Ingress 就已经创建好了，下面我们创建两个后段服务器，用来演示Ingress-nginx的功能</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">ingress]# cat backend-v1.yaml</span><br><span class="line">apiVersion: apps&#x2F;v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: dep-backend-1</span><br><span class="line">spec:</span><br><span class="line">  replicas: 2</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      version: myapp-v1</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: myapp-v1-pod</span><br><span class="line">      labels:</span><br><span class="line">        version: myapp-v1</span><br><span class="line">    spec:    </span><br><span class="line">      containers:</span><br><span class="line">      - name: myapp-container</span><br><span class="line">        image: ikubernetes&#x2F;myapp:v1</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: myapp-svc-1</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    version: myapp-v1</span><br><span class="line">  ports:</span><br><span class="line">  - name: http</span><br><span class="line">    port: 80</span><br><span class="line">    targetPort: 80</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">ingress]# cat backend-v2.yaml</span><br><span class="line">apiVersion: apps&#x2F;v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: dep-backend-2</span><br><span class="line">spec:</span><br><span class="line">  replicas: 2</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      version: myapp-v2</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      name: myapp-v1-pod</span><br><span class="line">      labels:</span><br><span class="line">        version: myapp-v2</span><br><span class="line">    spec:    </span><br><span class="line">      containers:</span><br><span class="line">      - name: myapp-container</span><br><span class="line">        image: ikubernetes&#x2F;myapp:v2</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: myapp-svc-2</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    version: myapp-v2</span><br><span class="line">  ports:</span><br><span class="line">  - name: http</span><br><span class="line">    port: 80</span><br><span class="line">    targetPort: 80</span><br></pre></td></tr></table></figure>
+
+<h2 id="Ingress-资源类型"><a href="#Ingress-资源类型" class="headerlink" title="Ingress 资源类型"></a>Ingress 资源类型</h2><h3 id="单Service资源型Ingress"><a href="#单Service资源型Ingress" class="headerlink" title="单Service资源型Ingress"></a>单Service资源型Ingress</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">ingress]# cat single-ingress.yaml </span><br><span class="line">apiVersion: extensions&#x2F;v1beta1</span><br><span class="line">kind: Ingress</span><br><span class="line">metadata:</span><br><span class="line">  name: single-ingress</span><br><span class="line">  annotations:</span><br><span class="line">    nginx.ingress.kubernetes.io&#x2F;rewrite-target: &#x2F;</span><br><span class="line">    kubernetes.io&#x2F;ingress.class: &quot;nginx&quot;</span><br><span class="line">spec:</span><br><span class="line">   rules:</span><br><span class="line">   - host: www.myapp1.com       </span><br><span class="line">     http:</span><br><span class="line">       paths:</span><br><span class="line">       - path: &#x2F;</span><br><span class="line">         backend:</span><br><span class="line">           serviceName: myapp-svc-1 #  service 资源的名称</span><br><span class="line">           servicePort: 80          #  service 资源监听的端口</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ingress]# kubectl  get ingress -o wide</span><br><span class="line">NAME             HOSTS            ADDRESS         PORTS   AGE</span><br><span class="line">single-ingress   www.myapp1.com   10.107.217.61   80      13m</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">获取 ingress service 映射的nodeport</span><br><span class="line">ingress]# kubectl get services -n ingress-nginx</span><br><span class="line">NAME            TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE</span><br><span class="line">ingress-nginx   NodePort   10.107.217.61   &lt;none&gt;        80:30080&#x2F;TCP,443:30443&#x2F;TCP   16m</span><br></pre></td></tr></table></figure>
+
+<img src="../images/kubernetes/single-ingress.png" style="zoom:40%;" />
+
+<h3 id="基于主机名的虚拟主机"><a href="#基于主机名的虚拟主机" class="headerlink" title="基于主机名的虚拟主机"></a>基于主机名的虚拟主机</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">ingress]# cat  host-based-routing.yaml </span><br><span class="line">apiVersion: networking.k8s.io&#x2F;v1beta1</span><br><span class="line">kind: Ingress</span><br><span class="line">metadata:</span><br><span class="line">  name: ingress-myapp1</span><br><span class="line">  annotations:</span><br><span class="line">    kubernetes.io&#x2F;ingress.class: &quot;nginx&quot;</span><br><span class="line">spec:</span><br><span class="line">  rules:</span><br><span class="line">  - host: www.myapp1.com</span><br><span class="line">    http:</span><br><span class="line">      paths:</span><br><span class="line">      - path: &#x2F;</span><br><span class="line">        backend:</span><br><span class="line">          serviceName: myapp-svc-1</span><br><span class="line">          servicePort: 80</span><br><span class="line">---</span><br><span class="line">apiVersion: networking.k8s.io&#x2F;v1beta1</span><br><span class="line">kind: Ingress</span><br><span class="line">metadata:</span><br><span class="line">  name: ingress-myapp2</span><br><span class="line">  annotations:</span><br><span class="line">    kubernetes.io&#x2F;ingress.class: &quot;nginx&quot;</span><br><span class="line">spec:</span><br><span class="line">  rules:</span><br><span class="line">  - host: www.myapp2.com</span><br><span class="line">    http:</span><br><span class="line">      paths:</span><br><span class="line">      - path: &#x2F;</span><br><span class="line">        backend:</span><br><span class="line">          serviceName: myapp-svc-2</span><br><span class="line">          servicePort: 80</span><br></pre></td></tr></table></figure>
+
+<img src="../images/kubernetes/base-host.png" style="zoom:40%;" />
+
+<h3 id="TLS-为服务提供https协议访问"><a href="#TLS-为服务提供https协议访问" class="headerlink" title="TLS-为服务提供https协议访问"></a>TLS-为服务提供https协议访问</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. 创建自签证书</span><br><span class="line">certs]#  openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout www.myapp1.com.key -out www.myapp1.com.crt -subj &quot;&#x2F;CN&#x3D;www.myapp1.com&#x2F;O&#x3D;www.myapp1.com&quot;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2. 将自签证书创建为集群内 tls 格式的secret</span><br><span class="line">certs]# kubectl create secret tls myapp1-secret --key www.myapp1.com.key --cert www.myapp1.com.crt</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">certs]# cat https-ingress.yaml </span><br><span class="line">apiVersion: extensions&#x2F;v1beta1</span><br><span class="line">kind: Ingress</span><br><span class="line">metadata:</span><br><span class="line">  name: https-ingress</span><br><span class="line">  annotations:</span><br><span class="line">    nginx.ingress.kubernetes.io&#x2F;rewrite-target: &#x2F;</span><br><span class="line">    kubernetes.io&#x2F;ingress.class: &quot;nginx&quot;</span><br><span class="line">spec:</span><br><span class="line">   tls:</span><br><span class="line">     - hosts:</span><br><span class="line">       -  www.myapp1.com</span><br><span class="line">       secretName: myapp1-secret</span><br><span class="line">   rules:</span><br><span class="line">   - host: www.myapp1.com</span><br><span class="line">     http:</span><br><span class="line">       paths:</span><br><span class="line">       - path: &#x2F;</span><br><span class="line">         backend:</span><br><span class="line">           serviceName: myapp-svc-1</span><br><span class="line">           servicePort: 80</span><br></pre></td></tr></table></figure>
+
+<img src="../images/kubernetes/https.png" style="zoom:40%;" />
+
+<h3 id="开启认证功能-Basic-Authentication"><a href="#开启认证功能-Basic-Authentication" class="headerlink" title="开启认证功能(Basic Authentication)"></a>开启认证功能(Basic Authentication)</h3>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/29/Ingress%E8%B5%84%E6%BA%90/" data-id="ck8chkhjt0000ez0l7sb23b51" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/03/28/Service-%E8%B5%84%E6%BA%90%E8%AF%A6%E8%A7%A3/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Service 资源详解</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Pod/" rel="tag">Pod</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/harbor/" rel="tag">harbor</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubeadm/" rel="tag">kubeadm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kubernetes/" rel="tag">kubernetes</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Pod/" style="font-size: 10px;">Pod</a> <a href="/tags/harbor/" style="font-size: 15px;">harbor</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/kubeadm/" style="font-size: 10px;">kubeadm</a> <a href="/tags/kubernetes/" style="font-size: 20px;">kubernetes</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/03/29/Ingress%E8%B5%84%E6%BA%90/">Ingress资源</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/28/Service-%E8%B5%84%E6%BA%90%E8%AF%A6%E8%A7%A3/">Service 资源详解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Pod-Controllers-%E8%AF%A6%E8%A7%A3/">Pod Controllers 详解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Working-with-Pods/">Working with Pods</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/">Hexo 博客搭建</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
