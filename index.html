@@ -64,6 +64,85 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Kuberntes存储之configMap" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/03/29/Kuberntes%E5%AD%98%E5%82%A8%E4%B9%8BconfigMap/" class="article-date">
+  <time datetime="2020-03-29T04:32:34.000Z" itemprop="datePublished">2020-03-29</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2020/03/29/Kuberntes%E5%AD%98%E5%82%A8%E4%B9%8BconfigMap/">Kuberntes存储之ConfigMap</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="ConfigMap-介绍"><a href="#ConfigMap-介绍" class="headerlink" title="ConfigMap 介绍"></a>ConfigMap 介绍</h2><p>configMap 功能是在 Kubernetes 1.2 版本汇总引入，许多应用程序会从配置文件，命令行参数或者环境变量中读取配置信息，ConfigMap API 给我们提供了向容器中注入配置信息的机制，类似于配置中心。我们可以保存configMap 为一个 key/value 的单个属性，也可以使用一个配置文件或者json二进制大对象来保存整个配置。</p>
+<h2 id="ConfigMap-的创建"><a href="#ConfigMap-的创建" class="headerlink" title="ConfigMap 的创建"></a>ConfigMap 的创建</h2><ul>
+<li><strong>使用目录创建</strong></li>
+</ul>
+<p>指定目录下的所有文件都会被用在ConfigMap里面创建一个键值对，键的名字就是文件名，值为文件内容。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">~]# mkdir configmap</span><br><span class="line">configmap]# mkdir dir</span><br><span class="line">configmap]# cd dir</span><br><span class="line">dir]# echo &quot;server.port&#x3D;8109&quot; &gt; application.properties</span><br><span class="line">dir]# echo &quot;dubbo.registry.address&#x3D;zookeeper:&#x2F;&#x2F;127.0.0.1:12181&quot;  &gt; application-pro.properties</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dir]# kubectl  create configmap dubbo-config --from-file&#x3D;..&#x2F;dir&#x2F;</span><br><span class="line">dir]# kubectl  get cm dubbo-config -o yaml</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>使用文件创建</strong></li>
+</ul>
+<p>只要指定一个文件就可以从单个文件中创建ConfigMap</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dir]# kubectl  create configmap dubbo-config-2 --from-file&#x3D;..&#x2F;dir&#x2F;application.properties</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>使用字面值创建</strong></li>
+</ul>
+<p>利用 <code>--from-literal</code>传递配置信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dir]# kubectl  create configmap dubbo-config-3 --from-literal&#x3D;my.country&#x3D;china --from-literal&#x3D;my.name&#x3D;rex</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用-ConfigMap-数据定义容器环境变量"><a href="#使用-ConfigMap-数据定义容器环境变量" class="headerlink" title="使用 ConfigMap 数据定义容器环境变量"></a>使用 ConfigMap 数据定义容器环境变量</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1. 在 ConfigMap 中将环境变量定义为键值对:</span><br><span class="line">~]# kubectl create configmap special-config --from-literal&#x3D;special.how&#x3D;very</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">2. 将 ConfigMap 中定义的 special.how 值分配给 Pod 规范中的 SPECIAL_LEVEL_KEY 环境变量</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: dapi-test-pod</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">    - name: test-container</span><br><span class="line">      image: k8s.gcr.io&#x2F;busybox</span><br><span class="line">      command: [ &quot;&#x2F;bin&#x2F;sh&quot;, &quot;-c&quot;, &quot;env&quot; ]</span><br><span class="line">      env:</span><br><span class="line">        - name: SPECIAL_LEVEL_KEY</span><br><span class="line">          valueFrom:</span><br><span class="line">            configMapKeyRef:</span><br><span class="line">              name: special-config</span><br><span class="line">              key: special.how</span><br><span class="line">  restartPolicy: Never</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  logs dapi-test-pod|grep &quot;SPECIAL_LEVEL_KEY&quot;</span><br><span class="line">SPECIAL_LEVEL_KEY&#x3D;very</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用-ConfigMap-提供Nginx配置文件"><a href="#使用-ConfigMap-提供Nginx配置文件" class="headerlink" title="使用 ConfigMap 提供Nginx配置文件"></a>使用 ConfigMap 提供Nginx配置文件</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">1. 创建 ConfigMap - nginx-cfg</span><br><span class="line">~]# cat server1.conf </span><br><span class="line">server &#123;</span><br><span class="line">    server_name www.myapp1.com;</span><br><span class="line">    listen 80;</span><br><span class="line">    location &#x2F; &#123;</span><br><span class="line">        root &quot;&#x2F;node1&#x2F;html&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">[root@k8s-master ~]# cat server2.conf </span><br><span class="line">server &#123;</span><br><span class="line">    server_name www.myapp2.com;</span><br><span class="line">    listen 80;</span><br><span class="line">    location &#x2F; &#123;</span><br><span class="line">        root &quot;&#x2F;node2&#x2F;html&quot;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">~]# kubectl  create configmap nginx-cfg --from-file&#x3D;.&#x2F;server1.conf  --from-file&#x3D;server-second.conf&#x3D;.&#x2F;server2.conf</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">2. 在Pod中引入配置文件为first.conf和second.conf</span><br><span class="line">~]# cat nginx-cm-pod.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: nginx-cm-pod</span><br><span class="line">  labels:</span><br><span class="line">    app: nginx</span><br><span class="line">    tier: front</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">  - name: nginx-container</span><br><span class="line">    image: nginx:1.14-alpine</span><br><span class="line">    volumeMounts:</span><br><span class="line">      - name: service-conf</span><br><span class="line">        mountPath: &#x2F;etc&#x2F;nginx&#x2F;conf.d&#x2F;</span><br><span class="line">  volumes:</span><br><span class="line">  - name: service-conf</span><br><span class="line">    configMap:</span><br><span class="line">      name: nginx-cfg</span><br><span class="line">      items:</span><br><span class="line">      - key: server1.conf</span><br><span class="line">        path: first.conf</span><br><span class="line">      - key: server-second.conf  # 此处不再是server2.conf ，而是别名</span><br><span class="line">        path: second.conf</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"> ~]# kubectl  exec -it nginx-cm-pod -- ls &#x2F;etc&#x2F;nginx&#x2F;conf.d</span><br><span class="line">first.conf   second.conf</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="使用ConfigMap配置Redis"><a href="#使用ConfigMap配置Redis" class="headerlink" title="使用ConfigMap配置Redis"></a>使用ConfigMap配置Redis</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">1. First create a kustomization.yaml containing a ConfigMap from the redis-config file:</span><br><span class="line">redis]# cat redis-config </span><br><span class="line">maxmemory 2mb</span><br><span class="line">maxmemory-policy allkeys-lru</span><br><span class="line"></span><br><span class="line">redis]#cat &lt;&lt;EOF &gt;.&#x2F;kustomization.yaml</span><br><span class="line">configMapGenerator:</span><br><span class="line">- name: example-redis-config</span><br><span class="line">  files:</span><br><span class="line">  - redis-config</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">2. Add the pod resource config to the kustomization.yaml:</span><br><span class="line">redis]# cat redis-pod.yaml </span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Pod</span><br><span class="line">metadata:</span><br><span class="line">  name: redis</span><br><span class="line">spec:</span><br><span class="line">  containers:</span><br><span class="line">  - name: redis</span><br><span class="line">    image: redis:5.0.4</span><br><span class="line">    command:</span><br><span class="line">      - redis-server</span><br><span class="line">      - &quot;&#x2F;redis-master&#x2F;redis.conf&quot;</span><br><span class="line">    env:</span><br><span class="line">    - name: MASTER</span><br><span class="line">      value: &quot;true&quot;</span><br><span class="line">    ports:</span><br><span class="line">    - containerPort: 6379</span><br><span class="line">    resources:</span><br><span class="line">      limits:</span><br><span class="line">        cpu: &quot;0.1&quot;</span><br><span class="line">    volumeMounts:</span><br><span class="line">    - mountPath: &#x2F;redis-master-data</span><br><span class="line">      name: data</span><br><span class="line">    - mountPath: &#x2F;redis-master</span><br><span class="line">      name: config</span><br><span class="line">  volumes:</span><br><span class="line">    - name: data</span><br><span class="line">      emptyDir: &#123;&#125;</span><br><span class="line">    - name: config</span><br><span class="line">      configMap:</span><br><span class="line">        name: example-redis-config</span><br><span class="line">        items:</span><br><span class="line">        - key: redis-config</span><br><span class="line">          path: redis.conf</span><br><span class="line">          </span><br><span class="line">redis]# cat &lt;&lt;EOF &gt;&gt;.&#x2F;kustomization.yaml</span><br><span class="line">resources:</span><br><span class="line">- redis-pod.yaml</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">3. Apply the kustomization directory to create both the ConfigMap and Pod objects:</span><br><span class="line">edis]# kubectl apply -k .</span><br><span class="line"></span><br><span class="line">redis]# kubectl get -k .</span><br><span class="line">NAME                                        DATA   AGE</span><br><span class="line">configmap&#x2F;example-redis-config-dgh9dg555m   1      20s</span><br><span class="line"></span><br><span class="line">NAME        READY   STATUS              RESTARTS   AGE</span><br><span class="line">pod&#x2F;redis   0&#x2F;1     ContainerCreating   0          20s</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">4. Use kubectl exec to enter the pod and run the redis-cli tool to verify that the configuration was correctly applied:</span><br><span class="line">redis]# kubectl exec -it redis redis-cli   </span><br><span class="line">127.0.0.1:6379&gt; CONFIG GET maxmemory</span><br><span class="line">1) &quot;maxmemory&quot;</span><br><span class="line">2) &quot;2097152&quot;</span><br><span class="line">127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</span><br><span class="line">1) &quot;maxmemory-policy&quot;</span><br><span class="line">2) &quot;allkeys-lru&quot;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/03/29/Kuberntes%E5%AD%98%E5%82%A8%E4%B9%8BconfigMap/" data-id="ck8d4oxo600003u0l9tg1944c" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Ingress资源" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/03/29/Ingress%E8%B5%84%E6%BA%90/" class="article-date">
@@ -860,115 +939,6 @@
 
 
   
-    <article id="post-Kubeadm-安装-Kubernetes-v1-15-1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/03/26/Kubeadm-%E5%AE%89%E8%A3%85-Kubernetes-v1-15-1/" class="article-date">
-  <time datetime="2020-03-26T05:32:33.000Z" itemprop="datePublished">2020-03-26</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/03/26/Kubeadm-%E5%AE%89%E8%A3%85-Kubernetes-v1-15-1/">Kubeadm 安装 Kubernetes v1.15.1</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>[TOC]</p>
-<h2 id="1、环境准备"><a href="#1、环境准备" class="headerlink" title="1、环境准备"></a>1、环境准备</h2><ul>
-<li><strong>主机名字解析</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">10.42.0.111 master.linux.io master</span><br><span class="line">10.42.0.11  node1.linux.io  node1</span><br><span class="line">10.42.0.12  node2.linux.io  node2</span><br><span class="line">10.42.0.13  node3.linux.io  node3</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>关闭防火墙和selinux</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">~]# for i in stop disable ;do sudo systemctl $i firewalld; done</span><br><span class="line">~]# setenforce 0 &amp;&amp; sudo sed -i &quot;s&#x2F;^SELINUX&#x3D;enforcing&#x2F;SELINUX&#x3D;disabled&#x2F;g&quot; &#x2F;etc&#x2F;selinux&#x2F;config</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>时间同步</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# systemctl enable chronyd.service &amp;&amp;  systemctl start chronyd.service &amp;&amp; systemctl status chronyd.service &amp;&amp; chronyc sources</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>关闭swap分区</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# swapoff -a &amp;&amp; sudo sed -i &#39;s&#x2F;.*swap.*&#x2F;#&amp;&#x2F;&#39; &#x2F;etc&#x2F;fstab</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>安装依赖</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# yum install -y conntrack ipvsadm ipset jq iptables curl sysstat lrzsz</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>调整内核参数</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">~]# modprobe overlay</span><br><span class="line">~]# modprobe br_netfilter</span><br><span class="line">~]# cat &gt; &#x2F;etc&#x2F;sysctl.d&#x2F;99-kubernetes-cri.conf &lt;&lt;EOF</span><br><span class="line">net.bridge.bridge-nf-call-iptables  &#x3D; 1</span><br><span class="line">net.ipv4.ip_forward                 &#x3D; 1</span><br><span class="line">net.bridge.bridge-nf-call-ip6tables &#x3D; 1</span><br><span class="line">EOF</span><br><span class="line">~]# sysctl  --system</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>升级内核至于 4.4</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">~]# rpm --import https:&#x2F;&#x2F;www.elrepo.org&#x2F;RPM-GPG-KEY-elrepo.org</span><br><span class="line">~]# rpm -Uvh http:&#x2F;&#x2F;www.elrepo.org&#x2F;elrepo-release-7.0-3.el7.elrepo.noarch.rpm</span><br><span class="line">~]# yum --enablerepo&#x3D;elrepo-kernel install -y  kernel-lt</span><br><span class="line">~]# grub2-set-default &quot;CentOS Linux (4.4.217-1.el7.elrepo.x86_64) 7 (Core)&quot;</span><br><span class="line">~]# reboot</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>列出系统内所有可用内核：<code>awk -F\&#39; &#39;$1==&quot;menuentry &quot; {print i++ &quot; : &quot; $2}&#39; /etc/grub2.cfg</code></p>
-</blockquote>
-<ul>
-<li><strong>加载 IPVS 模块</strong></li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">~]# vim &#x2F;etc&#x2F;sysconfig&#x2F;modules&#x2F;ipvs.modules  </span><br><span class="line">#!&#x2F;bin&#x2F;bash</span><br><span class="line">ipvs_mods_dir&#x3D;&quot;&#x2F;usr&#x2F;lib&#x2F;modules&#x2F;$(uname -r)&#x2F;kernel&#x2F;net&#x2F;netfilter&#x2F;ipvs&quot;</span><br><span class="line">for mod in $(ls $ipvs_mods_dir | grep -o &quot;^[^.]*&quot;); do</span><br><span class="line">    &#x2F;sbin&#x2F;modinfo -F filename $mod  &amp;&gt; &#x2F;dev&#x2F;null</span><br><span class="line">    if [ $? -eq 0 ]; then</span><br><span class="line">        &#x2F;sbin&#x2F;modprobe $mod</span><br><span class="line">    fi</span><br><span class="line">done</span><br><span class="line"></span><br><span class="line">~]# chmod  +x &#x2F;etc&#x2F;sysconfig&#x2F;modules&#x2F;ipvs.modules</span><br><span class="line">~]# bash &#x2F;etc&#x2F;sysconfig&#x2F;modules&#x2F;ipvs.modules</span><br></pre></td></tr></table></figure>
-
-<h2 id="2、安装docker"><a href="#2、安装docker" class="headerlink" title="2、安装docker"></a>2、安装docker</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">~]# yum install -y yum-utils device-mapper-persistent-data lvm2</span><br><span class="line">~]# yum-config-manager --add-repo http:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;docker-ce&#x2F;linux&#x2F;centos&#x2F;docker-ce.repo</span><br><span class="line">~]# yum install -y docker-ce-18.06.0.ce-3.el7</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"> ~]# mkdir &#x2F;etc&#x2F;docker</span><br><span class="line"> ~]# mkdir -pv &#x2F;opt&#x2F;docker-root</span><br><span class="line"> ~]# cat &#x2F;etc&#x2F;docker&#x2F;daemon.json</span><br><span class="line">&#123;</span><br><span class="line">        &quot;registry-mirrors&quot;: [&quot;https:&#x2F;&#x2F;o4uba187.mirror.aliyuncs.com&quot;],</span><br><span class="line">        &quot;graph&quot;:  &quot;&#x2F;opt&#x2F;docker-root&quot;,</span><br><span class="line">        &quot;exec-opts&quot;: [&quot;native.cgroupdriver&#x3D;systemd&quot;],</span><br><span class="line">        &quot;log-driver&quot;: &quot;json-file&quot;,</span><br><span class="line">        &quot;log-opts&quot;: &#123;     &quot;max-size&quot;: &quot;100m&quot;   &#125;,</span><br><span class="line">        &quot;storage-driver&quot;: &quot;overlay2&quot;,</span><br><span class="line">        &quot;storage-opts&quot;: [     &quot;overlay2.override_kernel_check&#x3D;true&quot;   ]</span><br><span class="line">&#125;</span><br><span class="line"> ~]# for i in enable restart; do systemctl restart docker ;done</span><br></pre></td></tr></table></figure>
-
-<h2 id="3、安装-kubeadm-kubelet-Kubectl"><a href="#3、安装-kubeadm-kubelet-Kubectl" class="headerlink" title="3、安装 kubeadm + kubelet + Kubectl"></a>3、安装 kubeadm + kubelet + Kubectl</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"> ~]# cat &lt;&lt;EOF &gt; &#x2F;etc&#x2F;yum.repos.d&#x2F;kubernetes.repo</span><br><span class="line">[kubernetes]</span><br><span class="line">name&#x3D;Kubernetes</span><br><span class="line">baseurl&#x3D;https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;yum&#x2F;repos&#x2F;kubernetes-el7-x86_64&#x2F;</span><br><span class="line">enabled&#x3D;1</span><br><span class="line">gpgcheck&#x3D;1</span><br><span class="line">repo_gpgcheck&#x3D;1</span><br><span class="line">gpgkey&#x3D;https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;yum&#x2F;doc&#x2F;yum-key.gpg https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;yum&#x2F;doc&#x2F;rpm-package-key.gpg</span><br><span class="line">EOF</span><br><span class="line">~]# yum install -y kubeadm-1.15.1 kubelet-1.15.1 kubectl-1.15.1</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# systemcl enable kubelete</span><br></pre></td></tr></table></figure>
-
-<h2 id="4、初始化-Master-节点"><a href="#4、初始化-Master-节点" class="headerlink" title="4、初始化 Master 节点"></a>4、初始化 Master 节点</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~]# kubeadm init  --kubernetes-version&#x3D;v1.15.1 --pod-network-cidr&#x3D;10.244.0.0&#x2F;16 --service-cidr&#x3D;10.96.0.0&#x2F;12  --image-repository registry.cn-hangzhou.aliyuncs.com&#x2F;google_containers --ignore-preflight-errors&#x3D;Swap | tee kubeadm-init.log</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>列出初始化需要的镜像：kubeadm config images list </p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">~]# mkdir -p $HOME&#x2F;.kube</span><br><span class="line">~]# cp -i &#x2F;etc&#x2F;kubernetes&#x2F;admin.conf $HOME&#x2F;.kube&#x2F;config</span><br><span class="line">~]# chown $(id -u):$(id -g) $HOME&#x2F;.kube&#x2F;config</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>记录<code>kubeadm join 10.42.0.111:6443 --token d3082g.auh52g8jez3btf38 \
-    --discovery-token-ca-cert-hash sha256:75f77a8d1631ddd3c5d7ea17c1c22009edeeb60493ed308aebbefb5e2a4be7eb</code></p>
-</blockquote>
-<h2 id="5、部署-Flanal"><a href="#5、部署-Flanal" class="headerlink" title="5、部署 Flanal"></a>5、部署 Flanal</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">~]# mkdir flannel</span><br><span class="line">~]# cd flannel</span><br><span class="line">flannel]# wget https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;coreos&#x2F;flannel&#x2F;master&#x2F;Documentation&#x2F;kube-flannel.yml</span><br><span class="line">flannel]# grep image kube-flannel.yml </span><br><span class="line">        image: quay.io&#x2F;coreos&#x2F;flannel:v0.12.0-amd64</span><br><span class="line">flannel]# sed -i &#39;s@quay.io@quay.azk8s.cn@g&#39; kube-flannel.yml </span><br><span class="line">flannel]# kubectl  apply -f kube-flannel.yml</span><br></pre></td></tr></table></figure>
-
-<h2 id="6、加入Node-节点"><a href="#6、加入Node-节点" class="headerlink" title="6、加入Node 节点"></a>6、加入Node 节点</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubeadm join 10.42.0.111:6443 --token d3082g.auh52g8jez3btf38 \</span><br><span class="line">    --discovery-token-ca-cert-hash sha256:75f77a8d1631ddd3c5d7ea17c1c22009edeeb60493ed308aebbefb5e2a4be7eb</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  get nodes</span><br><span class="line">NAME              STATUS   ROLES    AGE     VERSION</span><br><span class="line">master.linux.io   Ready    master   31m     v1.15.1</span><br><span class="line">node1.linux.io    Ready    &lt;none&gt;   10m     v1.15.1</span><br><span class="line">node2.linux.io    Ready    &lt;none&gt;   9m51s   v1.15.1</span><br><span class="line">node3.linux.io    Ready    &lt;none&gt;   9m43s   v1.15.1</span><br></pre></td></tr></table></figure>
-
-<h2 id="7、修改-IPTABLES-模式为IPVS-模式"><a href="#7、修改-IPTABLES-模式为IPVS-模式" class="headerlink" title="7、修改 IPTABLES 模式为IPVS 模式"></a>7、修改 IPTABLES 模式为IPVS 模式</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">~]# kubectl  edit cm kube-proxy -n kube-system</span><br><span class="line">    mode: &quot;ipvs&quot; # 默认为iptables</span><br><span class="line">~]# kubectl delete pods -l k8s-app&#x3D;kube-proxy -n kube-system</span><br><span class="line"> ~]# ipvsadm -Ln    </span><br><span class="line">IP Virtual Server version 1.2.1 (size&#x3D;4096)</span><br><span class="line">Prot LocalAddress:Port Scheduler Flags</span><br><span class="line">  -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn</span><br><span class="line">TCP  10.96.0.1:443 rr</span><br><span class="line">  -&gt; 10.42.0.111:6443             Masq    1      0          0</span><br></pre></td></tr></table></figure>
-
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/03/26/Kubeadm-%E5%AE%89%E8%A3%85-Kubernetes-v1-15-1/" data-id="ck88horeq0000bd0lgiuldhg2" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kubeadm/" rel="tag">kubeadm</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -1019,6 +989,10 @@
       <ul>
         
           <li>
+            <a href="/2020/03/29/Kuberntes%E5%AD%98%E5%82%A8%E4%B9%8BconfigMap/">Kuberntes存储之ConfigMap</a>
+          </li>
+        
+          <li>
             <a href="/2020/03/29/Ingress%E8%B5%84%E6%BA%90/">Ingress资源</a>
           </li>
         
@@ -1032,10 +1006,6 @@
         
           <li>
             <a href="/2020/03/27/Working-with-Pods/">Working with Pods</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/27/Hexo-%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA/">Hexo 博客搭建</a>
           </li>
         
       </ul>
